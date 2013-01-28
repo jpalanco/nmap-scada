@@ -1,14 +1,8 @@
-nmap-scada
-==========
-
-nse scripts for scada identification
-
-
 local http = require "http"
 local nmap = require "nmap"
 local shortport = require "shortport"
 local strbuf = require "strbuf"
-local table = require "table"
+
 
 description = [[
 Checks for SCADA Siemens <code>S7-3** , PCS7 </code> devices.
@@ -19,8 +13,7 @@ The higher the verbosity or debug level, the more disallowed entries are shown.
 ---
 --@output
 -- 80/tcp  open   http    syn-ack
--- |  foo
--- |_ var
+-- |_Siemens-PCS7: CP 343-1 CX10
 
 
 
@@ -32,26 +25,18 @@ portrule = shortport.http
 local last_len = 0
 
 
--- parse all disallowed entries in body and add them to a strbuf
-local function verify_pcs7(body, output)
+local function verify_version(body, output)
 	local version = nil
 	if string.find (body, "/S7Web.css") then
-	  version = body:match("(%w+)")
-	  version = "fifa 12"
-	  output = "version:" .. version
+	  version = body:match("<td class=\"Title_Area_Name\">(.-)</td>")
+		if version == nil then 
+			version = "Unknown version"
+		end	
+	  output = output .. version
 	  return true
 	else
 	  return nil
-	end -- if
-
-
-	--for line in body:gmatch("[^\r\n]+") do 
-	--	for w in line:gmatch('[Dd]isallow:%s*(.*)') do 
-	--		w = w:gsub("%s*#.*", "")
-	--		buildOutput(output, w)
-	--	end
-	--end
-	--return #output
+	end 
 end
 
 action = function(host, port)
@@ -63,15 +48,15 @@ action = function(host, port)
 	end
 
 	local v_level = nmap.verbosity() + (nmap.debugging()*2)
-	local output = strbuf.new()
 	local detail = 15
+	local output = strbuf.new()
+	
 
-	verified = verify_pcs7(answer.body, output)
+	verified = verify_version(answer.body, output)
+	
 
 	if verified == nil then 
 		return
-	else
-	    print "------->"
 	end
 
 	-- verbose/debug mode, print 50 entries
@@ -82,16 +67,6 @@ action = function(host, port)
 		detail = verified
 	end
 
-	-- check we have enough entries
-	--if detail > dis_count then 
-	--	detail = dis_count
-	--end
 
-	--noun = dis_count == 1 and "entry " or "entries "
-
-	--local shown = (detail == 0 or detail == dis_count) 
-    --             and "\n" or '(' .. detail .. ' shown)\n'
-
-    --return "finalizado"
-	return  output 
+    return output
 end
