@@ -5,7 +5,7 @@ local strbuf = require "strbuf"
 
 
 description = [[
-Checks for SCADA Siemens <code>S7-3** , PCS7 </code> devices.
+Checks for SCADA Siemens <code>S7 Communications Processor </code> devices.
 
 The higher the verbosity or debug level, the more disallowed entries are shown.
 ]]
@@ -13,7 +13,7 @@ The higher the verbosity or debug level, the more disallowed entries are shown.
 ---
 --@output
 -- 80/tcp  open   http    syn-ack
--- |_Siemens-PCS7: CP 343-1 CX10
+-- |_Siemens-CommunicationsProcessor: CP 343-1 CX10
 
 
 
@@ -34,6 +34,13 @@ local function verify_version(body, output)
 		end	
 	  output = output .. version
 	  return true
+	 elseif string.find (body, "examples/visual_key.htm") then
+	  version = body:match("<title>(.-)</title>")
+		if version == nil then 
+			version = "Unknown version"
+		end	
+	  output = output .. version
+	  return true
 	else
 	  return nil
 	end 
@@ -41,10 +48,19 @@ end
 
 action = function(host, port)
         local verified, noun 
-	local answer = http.get(host, port, "/Portal0000.htm" )
 
-	if answer.status ~= 200 then
+	local answer1 = http.get(host, port, "/Portal0000.htm" )
+	local answer2 = http.get(host, port, "/" )
+
+
+	if answer1.status ~= 200 and answer2.status ~= 200 then
 		return nil
+	end
+
+	if answer1.status == 200 then
+  		answer = answer1
+	elseif answer2.status == 200 then
+		answer = answer2
 	end
 
 	local v_level = nmap.verbosity() + (nmap.debugging()*2)

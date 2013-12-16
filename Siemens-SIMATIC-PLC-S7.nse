@@ -5,7 +5,7 @@ local strbuf = require "strbuf"
 
 
 description = [[
-Checks for SCADA Siemens <code>SIMATIC S7-</code> devices.
+Checks for SCADA Siemens <code>Simatic S7</code> devices.
 
 The higher the verbosity or debug level, the more disallowed entries are shown.
 ]]
@@ -13,7 +13,7 @@ The higher the verbosity or debug level, the more disallowed entries are shown.
 ---
 --@output
 -- 80/tcp  open   http    syn-ack
--- |_SIEMENS-Simatic-HMI-miniweb: Not implemented verify_version
+-- |_Siemens-SIMATIC-S7: SIMATIC 300 (MPI2)/CPU 315-2 PN/DP
 
 
 
@@ -27,10 +27,11 @@ local last_len = 0
 
 local function verify_version(body, output)
 	local version = nil
-	if string.find (body, "ad_header_form_sprachauswahl") then
-	  version = body:match("")
+	if string.find (body, "/S7Web.css") then
+	  version = body:match("<td valign=\"top\" class=\"Header_Title_Description\">(.-)</td>")
+	  version = version:gsub("&nbsp;", " ")
 		if version == nil then 
-			version = "Not implemented verify_version"
+			version = "Unknown version"
 		end	
 	  output = output .. version
 	  return true
@@ -41,7 +42,7 @@ end
 
 action = function(host, port)
         local verified, noun 
-	local answer = http.get(host, port, "/CSS/Miniweb.css" )
+	local answer = http.get(host, port, "/Portal/Portal.mwsl" )
 
 	if answer.status ~= 200 then
 		return nil
