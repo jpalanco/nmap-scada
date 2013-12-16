@@ -27,6 +27,7 @@ local last_len = 0
 
 local function verify_version(body, output)
 	local version = nil
+
 	if string.find (body, "/S7Web.css") then
 	  version = body:match("<td class=\"Title_Area_Name\">(.-)</td>")
 		if version == nil then 
@@ -34,8 +35,16 @@ local function verify_version(body, output)
 		end	
 	  output = output .. version
 	  return true
-	 elseif string.find (body, "examples/visual_key.htm") then
+	elseif string.find (body, "examples/visual_key.htm") then
 	  version = body:match("<title>(.-)</title>")
+		if version == nil then 
+			version = "Unknown version"
+		end	
+	  output = output .. version
+	  return true
+	elseif string.find (body, "__FSys_Root") then
+	  version = body:match("</B></TD><TD>(.-)</TD></TR>")
+	  version = version:gsub("&nbsp;", " ")
 		if version == nil then 
 			version = "Unknown version"
 		end	
@@ -50,10 +59,10 @@ action = function(host, port)
         local verified, noun 
 
 	local answer1 = http.get(host, port, "/Portal0000.htm" )
-	local answer2 = http.get(host, port, "/" )
+	local answer2 = http.get(host, port, "/__Additional" )
+	local answer3 = http.get(host, port, "/" )
 
-
-	if answer1.status ~= 200 and answer2.status ~= 200 then
+	if answer1.status ~= 200 and answer2.status ~= 200 and answer3.status ~= 200 then
 		return nil
 	end
 
@@ -61,6 +70,8 @@ action = function(host, port)
   		answer = answer1
 	elseif answer2.status == 200 then
 		answer = answer2
+	elseif answer3.status == 200 then
+		answer = answer3
 	end
 
 	local v_level = nmap.verbosity() + (nmap.debugging()*2)
