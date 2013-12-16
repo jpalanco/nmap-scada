@@ -13,7 +13,7 @@ The higher the verbosity or debug level, the more disallowed entries are shown.
 ---
 --@output
 -- 80/tcp  open   http    syn-ack
--- |_Siemens-SIMATIC-S7: SIMATIC 300 (MPI2)/CPU 315-2 PN/DP
+-- |_Siemens-Simatic-S7: SIMATIC 300 (MPI2)/CPU 315-2 PN/DP
 
 
 
@@ -35,18 +35,35 @@ local function verify_version(body, output)
 		end	
 	  output = output .. version
 	  return true
+	 elseif string.find (body, "snCplugPresent") then
+	  version = body:match("Siemens, (.-)&nbsp;!!!")
+	  version = version:gsub("&nbsp;", " ")
+		if version == nil then 
+			version = "Unknown version"
+		end	
+	  output = output .. version
+	  return true
+
 	else
 	  return nil
 	end 
 end
 
 action = function(host, port)
-        local verified, noun 
-	local answer = http.get(host, port, "/Portal/Portal.mwsl" )
+    local verified, noun 
+	local answer1 = http.get(host, port, "/Portal/Portal.mwsl" )
+	local answer2 = http.get(host, port, "/docs/cplugError.html/" )
 
-	if answer.status ~= 200 then
+	if answer1.status ~= 200 and answer2.status ~= 200 then
 		return nil
 	end
+
+	if answer1.status == 200 then
+  		answer = answer1
+	elseif answer2.status == 200 then
+		answer = answer2
+	end
+
 
 	local v_level = nmap.verbosity() + (nmap.debugging()*2)
 	local detail = 15
